@@ -22,8 +22,16 @@ export default {
 			const [giver, receiver] = decision;
 			return doc(html`
 				<div class="result">
-					<p class="pre">🎅🏼</p>
-					<h1>${giver} 👉 ${receiver}</h1>
+					<button
+						class="pre"
+						data-target="receiver"
+						aria-label="Avslöja mottagare"
+					>
+						🎅🏼
+					</button>
+					<h1>
+						${giver} 👉 <span id="receiver" class="hidden">${receiver}</span>
+					</h1>
 					<p class="post">Men säg inget!</p>
 				</div>
 			`);
@@ -98,6 +106,11 @@ function doc(main: string, init: ResponseInit = {}) {
 							font-size: 3rem;
 						}
 
+						& .pre {
+							background-color: transparent;
+							border: none;
+						}
+
 						& h1 {
 							color: var(--color-text-inverted);
 							background-color: var(--color-bg-secondary);
@@ -106,6 +119,10 @@ function doc(main: string, init: ResponseInit = {}) {
 							padding-block: 1rem;
 							font-size: 5rem;
 							text-align: center;
+						}
+
+						& .hidden {
+							opacity: 0;
 						}
 					}
 
@@ -117,6 +134,16 @@ function doc(main: string, init: ResponseInit = {}) {
 			</head>
 			<body>
 				<main>${main}</main>
+
+				<script type="module">
+					const actions = document.querySelectorAll('[data-target]');
+					actions.forEach((action) => {
+						action.addEventListener('click', () => {
+							const target = document.getElementById(action.dataset.target);
+							if (target) target.classList.toggle('hidden');
+						});
+					});
+				</script>
 			</body>
 		</html>
 	`;
@@ -142,11 +169,4 @@ function html(template: TemplateStringsArray, ...substitutions: string[]) {
 	}
 
 	return result.trim();
-}
-
-function hash(key: string) {
-	return [...key].reduce(
-		(hash, char) => (hash * 31 + char.charCodeAt(0)) | 0,
-		0,
-	);
 }
