@@ -2,78 +2,82 @@ import { customAlphabet } from 'nanoid';
 
 export function generate_secret_santa() {
 	const result = shuffle(
-		['Adam', 'Annika', 'Aron', 'Ewa', 'Magdalena', 'Per'],
-		{
-			Adam: 'Magdalena',
-			Annika: 'Aron',
-			Aron: 'Annika',
-			Ewa: 'Per',
-			Magdalena: 'Adam',
-			Per: 'Ewa',
-		},
+		[
+			['Adam', 'Magdalena'],
+			['Aron', 'Annika'],
+			['Per', 'Ewa'],
+		],
+		[
+			['Adam', 'Aron'],
+			['Aron', 'Adam'],
+			['Magdalena', 'Per'],
+			['Per', 'Magdalena'],
+			['Annika', 'Ewa'],
+			['Ewa', 'Annika'],
+		],
 		100,
 	);
 
 	const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz', 6);
 
 	const paths = {} as Record<string, [string, string]>;
-	for (const [key, value] of Object.entries(result)) {
+	for (const [giver, receiver] of result) {
 		const id = nanoid();
-		paths[id] = [key, value];
+		paths[id] = [giver, receiver];
 	}
 
 	return paths;
 }
 
-type SecretSanta<
-	People extends ReadonlyArray<string>,
-	ForbiddenCombinations extends Record<People[number], People[number]>,
-> = {
-	[Key in People[number]]: Exclude<
-		People[number],
-		ForbiddenCombinations[Key] | Key
-	>;
-};
-
+/**
+ *
+ * @param couples The couples participating in the secret santa
+ * @param previous_version Previous years shuffle, to avoid repetition
+ * @param max_tries Maximum tries to avoid infinite loop
+ * @param shuffles Ignore, internal
+ */
 function shuffle<
-	const People extends ReadonlyArray<string>,
-	const ForbiddenCombinations extends Record<People[number], People[number]>,
+	const Person extends string,
+	const Couples extends [Person, Person][],
 >(
-	people: People,
-	forbidden_combinations: ForbiddenCombinations,
+	couples: Couples,
+	previous_version: NoInfer<[giver: Person, receiver: Person][]>,
 	max_tries: number,
 	shuffles = 0,
-): SecretSanta<People, ForbiddenCombinations> {
-	try {
-		let available_people = [...people];
-		const secret_santa = {} as Partial<
-			SecretSanta<People, ForbiddenCombinations>
-		>;
+) {
+	let available_people = couples.flatMap((couple) => couple);
+	const secret_santa = [] as [giver: Person, receiver: Person][];
 
-		for (let person of people as ReadonlyArray<People[number]>) {
-			const dissallowed = [person, forbidden_combinations[person]];
-			let target = person;
+	try {
+		for (let giver of couples.flatMap((couple) => couple)) {
+			const dissallowed = new Set([
+				...couples.find(([x, y]) => x === giver || y === giver)!, // no giving between couples and to self
+				...previous_version.find(([x]) => x === giver)!, // no exchange like last year
+				secret_santa.find(([, receiver]) => receiver === giver)?.[0], // no giving to the one giving you
+			]);
+
+			let receiver = giver;
 			let tries = 0;
 
-			while (dissallowed.includes(target)) {
-				target = available_people[
-					get_random_int(0, available_people.length)
-				] as People[number];
+			while (dissallowed.has(receiver)) {
+				receiver = available_people.at(
+					get_random_int(0, available_people.length),
+				)!;
 
 				tries += 1;
 				if (tries > max_tries) {
-					throw new ShuffleError(person, secret_santa, shuffles);
+					throw new ShuffleError(giver, secret_santa, shuffles);
 				}
 			}
 
-			available_people.splice(available_people.indexOf(target), 1);
-			secret_santa[person] = target as any as undefined;
+			available_people.splice(available_people.indexOf(receiver), 1);
+			secret_santa.push([giver, receiver]);
 		}
 
-		return secret_santa as SecretSanta<People, ForbiddenCombinations>;
+		return secret_santa;
 	} catch (error) {
 		if (shuffles > max_tries) throw error;
-		return shuffle(people, forbidden_combinations, max_tries, shuffles + 1);
+		return shuffle(couples, previous_version, max_tries, shuffles + 1);
 	}
 }
 
@@ -86,12 +90,12 @@ function get_random_int(min: number, max: number): number {
 
 class ShuffleError extends Error {
 	failed_person: string;
-	state: Record<string, unknown>;
+	state: [giver: string, receiver: string][];
 	shuffles: number;
 
 	constructor(
 		failedPerson: string,
-		state: Record<string, unknown>,
+		state: [giver: string, receiver: string][],
 		shuffles: number,
 	) {
 		super(`Failed to find a match for ${failedPerson} after ${shuffles} tries`);

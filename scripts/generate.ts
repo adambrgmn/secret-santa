@@ -1,6 +1,6 @@
 import * as fs from 'node:fs/promises';
 
-import { generate_secret_santa } from './generate-secret-santa';
+import { generate_secret_santa } from './generate-secret-santa.ts';
 
 try {
 	const paths = generate_secret_santa();

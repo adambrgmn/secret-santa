@@ -1,14 +1,26 @@
 {
-	"extends": "@tsconfig/strictest/tsconfig.json",
 	"include": ["**/*.ts"],
 	"compilerOptions": {
-		"types": ["@cloudflare/workers-types", "node"],
-		"module": "es2022",
-		"moduleResolution": "node",
-		"target": "es2021",
-		"lib": ["es2021"],
+		"lib": [
+			"es2024",
+			"ESNext.Array",
+			"ESNext.Collection",
+			"ESNext.Iterator",
+			"ESNext.Promise"
+		],
+		"module": "nodenext",
+		"target": "es2024",
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"moduleResolution": "node16",
+		"isolatedModules": true,
+		"verbatimModuleSyntax": true,
+		"rewriteRelativeImportExtensions": true,
+		"erasableSyntaxOnly": true,
 		"noEmit": true,
-		"jsx": "react",
-		"resolveJsonModule": true
+		/* Strictness */
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"noImplicitOverride": true
 	}
 }

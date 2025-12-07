@@ -1,8 +1,6 @@
 import '@total-typescript/ts-reset';
 
-import secret_santa from './secret-santa.json';
-
-interface Env {}
+import secret_santa from './secret-santa.json' with { type: 'json' };
 
 export default {
 	async fetch(
